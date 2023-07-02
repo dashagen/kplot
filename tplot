@@ -1,0 +1,110 @@
+#!/usr/bin/python3
+import sys
+import io
+import os
+import pandas as pd
+import getopt
+
+
+########################
+# UDF's            
+########################
+
+# is_number function
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+# window functions
+def dotrans(s, trans):
+
+    tran_type = trans[0]
+    tran_win  = int(trans[1:])
+
+    if tran_type == 'a':
+        return(s.rolling(tran_win).mean())
+    elif tran_type == 'd':
+        return(s.diff(tran_win))
+    elif tran_type == 'f':
+        return(s.shift(-tran_win))
+    elif tran_type == 'r':
+        return(s / s.shift(tran_win))
+    elif tran_type == 'g':
+        return(s / s.shift(tran_win)-1)
+    elif tran_type == 'q':
+        return(s.quantile(tran_win/100))
+    else:
+        return(s)
+
+
+########################
+# MAIN PROGRAM
+########################
+if __name__ == "__main__":
+
+    # Help line
+    help_line = os.path.basename(sys.argv[0]) + " -t <col1=tran1,col2=tran2,..> [-g]"
+
+    #  Parse inputs
+    trans = None
+    header_opt = False
+
+    argv = sys.argv[1:]
+
+    try:
+        opts, args = getopt.getopt(argv,"hgt:")
+    except getopt.GetoptError:
+        print(help_line)
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt == '-h':
+            print(help_line)
+            sys.exit()
+        elif opt in ("-t"):
+            trans = arg
+        elif opt in ("-g"):
+            header_opt = True
+    
+    if ( trans is None):
+        print('must have -t options')
+        print(help_line)
+        sys.exit(2)
+
+
+    # Read the first line from stdin
+    first_line = sys.stdin.readline()
+
+    # Determine if there's a header
+    if header_opt:
+        header = 0
+    elif True in [is_number(x) for x in first_line.split()]:
+        header = None
+    else:
+        header = 0
+        header_opt = True
+
+    # Read the remaining content and prepend the first line
+    remaining_content = sys.stdin.read()
+    content = first_line + remaining_content
+
+    # Create a file-like buffer with the content
+    content_buffer = io.StringIO(content)
+
+    # Read the data into a DataFrame
+    df = pd.read_csv(content_buffer, sep='\s+', header=header)
+
+    # Assign column names if there is no header
+    if header_opt is False:
+        df.columns = [ 'var' + str(i) for i in range(df.shape[1])]
+
+    # Apply window functions to selected columns
+    for cl,tr in [x.split('=') for x in trans.split(",")]:
+        df[df.columns[int(cl)-1]+"."+tr] = dotrans(df[df.columns[int(cl)-1]], tr)
+
+    # Display the DataFrame
+    print(df.to_string(index=False))
+
