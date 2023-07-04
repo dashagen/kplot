@@ -20,27 +20,6 @@ def is_number(s):
     except ValueError:
         return False
 
-# window functions
-def dotrans(s, trans):
-
-    tran_type = trans[0]
-    tran_win  = int(trans[1:])
-
-    if tran_type == 'a':
-        return(s.rolling(tran_win).mean())
-    elif tran_type == 'd':
-        return(s.diff(tran_win))
-    elif tran_type == 'f':
-        return(s.shift(-tran_win))
-    elif tran_type == 'r':
-        return(s / s.shift(tran_win))
-    elif tran_type == 'g':
-        return(s / s.shift(tran_win)-1)
-    elif tran_type == 'q':
-        return(s.quantile(tran_win/100))
-    else:
-        return(s)
-
 
 ########################
 # MAIN PROGRAM
@@ -114,11 +93,7 @@ if __name__ == "__main__":
         plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".") 
     
     plt.legend(df.columns[cols_indx])
-
     plt.subplots_adjust(bottom=0.15)
-
     plt.show()
 
-    # Display the DataFrame
-    #print(df.to_string(index=False))
 
