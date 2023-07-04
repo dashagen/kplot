@@ -4,6 +4,8 @@ import io
 import os
 import pandas as pd
 import getopt
+import math
+import matplotlib.pyplot as plt
 
 
 ########################
@@ -46,35 +48,36 @@ def dotrans(s, trans):
 if __name__ == "__main__":
 
     # Help line
-    help_line = os.path.basename(sys.argv[0]) + " -t <col1=tran1,col2=tran2,..> [-g]"
+    help_line = os.path.basename(sys.argv[0]) + " -k<col1, col2,..>  -b<label/x col> -f"
 
     #  Parse inputs
-    trans = None
     header_opt = False
 
     argv = sys.argv[1:]
 
     try:
-        opts, args = getopt.getopt(argv,"hgt:")
+        opts, args = getopt.getopt(argv,"hk:b:f")
     except getopt.GetoptError:
         print(help_line)
         sys.exit(2)
 
+    # check if k, b options are used
+    all_options = [t[0] for t in opts]
+
+    if set(["-k", "-b"]).issubset(set(all_options)) is False:
+        print(help_line)
+        sys.exit(2)
+
+    # parse all options
     for opt, arg in opts:
         if opt == '-h':
             print(help_line)
             sys.exit()
-        elif opt in ("-t"):
-            trans = arg
-        elif opt in ("-g"):
-            header_opt = True
+        elif opt in ("-k"):
+            cols_indx = [int(x)-1 for x in arg.split(",")]
+        elif opt in ("-b"):
+            base_indx = int(arg) - 1
     
-    if ( trans is None):
-        print('must have -t options')
-        print(help_line)
-        sys.exit(2)
-
-
     # Read the first line from stdin
     first_line = sys.stdin.readline()
 
@@ -101,10 +104,21 @@ if __name__ == "__main__":
     if header_opt is False:
         df.columns = [ 'var' + str(i) for i in range(df.shape[1])]
 
-    # Apply window functions to selected columns
-    for cl,tr in [x.split('=') for x in trans.split(",")]:
-        df[df.columns[int(cl)-1]+"."+tr] = dotrans(df[df.columns[int(cl)-1]], tr)
+    ##### plot
+    if ( '-f' in all_options):
+        xseries = [str(x) for x in df.iloc[:, base_indx]]
+        label_span = math.ceil(df.shape[0] / 40)
+        plt.plot(xseries, df.iloc[:, cols_indx ], marker=".") 
+        plt.xticks(xseries[::label_span],  rotation=90)
+    else:
+        plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".") 
+    
+    plt.legend(df.columns[cols_indx])
+
+    plt.subplots_adjust(bottom=0.15)
+
+    plt.show()
 
     # Display the DataFrame
-    print(df.to_string(index=False))
+    #print(df.to_string(index=False))
 
