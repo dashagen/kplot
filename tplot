@@ -26,6 +26,11 @@ def is_number(s):
 ########################
 if __name__ == "__main__":
 
+
+    #---------------------
+    # argument parsing
+    #---------------------
+
     # Help line
     help_line = os.path.basename(sys.argv[0]) + " -k<col1, col2,..>  -b<label/x col> -f"
 
@@ -57,6 +62,10 @@ if __name__ == "__main__":
         elif opt in ("-b"):
             base_indx = int(arg) - 1
     
+    #---------------------
+    # stdin processing
+    #---------------------
+
     # Read the first line from stdin
     first_line = sys.stdin.readline()
 
@@ -83,6 +92,9 @@ if __name__ == "__main__":
     if header_opt is False:
         df.columns = [ 'var' + str(i) for i in range(df.shape[1])]
 
+    #---------------------
+    # Plotting
+    #---------------------
     ##### plot
     if ( '-f' in all_options):
         xseries = [str(x) for x in df.iloc[:, base_indx]]
