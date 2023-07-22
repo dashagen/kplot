@@ -104,7 +104,12 @@ if __name__ == "__main__":
     else:
         plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".") 
     
+    ### zero line
+    plt.axhline(y=0, color='black', ls='-', alpha=0.3)
+
+    ### legend
     plt.legend(df.columns[cols_indx])
+
     plt.subplots_adjust(bottom=0.15)
     plt.show()
 
