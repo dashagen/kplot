@@ -32,7 +32,7 @@ if __name__ == "__main__":
     #---------------------
 
     # Help line
-    help_line = os.path.basename(sys.argv[0]) + " -k<col1, col2,..>  -b<label/x col> -f"
+    help_line = os.path.basename(sys.argv[0]) + " -k<col1, col2,..>  -b<label/x col> -v <vertical line pos> -f"
 
     #  Parse inputs
     header_opt = False
@@ -40,15 +40,15 @@ if __name__ == "__main__":
     argv = sys.argv[1:]
 
     try:
-        opts, args = getopt.getopt(argv,"hk:b:f")
+        opts, args = getopt.getopt(argv,"hk:b:fv:")
     except getopt.GetoptError:
         print(help_line)
         sys.exit(2)
 
     # check if k, b options are used
-    all_options = [t[0] for t in opts]
+    all_options_set = set(opt for opt, arg in opts)
 
-    if set(["-k", "-b"]).issubset(set(all_options)) is False:
+    if set(["-k", "-b"]).issubset(all_options_set) is False:
         print(help_line)
         sys.exit(2)
 
@@ -61,6 +61,8 @@ if __name__ == "__main__":
             cols_indx = [int(x)-1 for x in arg.split(",")]
         elif opt in ("-b"):
             base_indx = int(arg) - 1
+        elif opt in ("-v"):
+            vbar_loc = arg
     
     #---------------------
     # stdin processing
@@ -95,22 +97,30 @@ if __name__ == "__main__":
     #---------------------
     # Plotting
     #---------------------
-    ##### plot
-    if ( '-f' in all_options):
+    if (isinstance(df.iloc[0, base_indx], str) or '-f' in all_options_set):
+        ## Space tick marks out if its a line plot based on the type of X
+        ## or if -f is triggered
         xseries = [str(x) for x in df.iloc[:, base_indx]]
         label_span = math.ceil(df.shape[0] / 40)
         plt.plot(xseries, df.iloc[:, cols_indx ], marker=".") 
         plt.xticks(xseries[::label_span],  rotation=90)
     else:
+        ## scatter plot (X is numeric )
         plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".") 
     
     ### zero line
     plt.axhline(y=0, color='black', ls='-', alpha=0.3)
+
+    ### verticale line
+    if '-v' in all_options_set:
+        if (isinstance(df.iloc[0, base_indx], str) or '-f' in all_options_set):
+            plt.axvline(x=vbar_loc, color='red', ls='-', alpha=0.5)
+        else:
+            plt.axvline(x=float(vbar_loc), color='red', ls='-', alpha=0.5)
 
     ### legend
     plt.legend(df.columns[cols_indx])
 
     plt.subplots_adjust(bottom=0.15)
     plt.show()
-
 
