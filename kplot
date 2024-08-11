@@ -40,7 +40,7 @@ if __name__ == "__main__":
     argv = sys.argv[1:]
 
     try:
-        opts, args = getopt.getopt(argv,"hk:b:fv:")
+        opts, args = getopt.getopt(argv,"hk:b:fv:l:")
     except getopt.GetoptError:
         print(help_line)
         sys.exit(2)
@@ -63,6 +63,8 @@ if __name__ == "__main__":
             base_indx = int(arg) - 1
         elif opt in ("-v"):
             vbar_loc = arg
+        elif opt in ("-l"):
+            user_legend = arg.split(",")
     
     #---------------------
     # stdin processing
@@ -119,7 +121,10 @@ if __name__ == "__main__":
             plt.axvline(x=float(vbar_loc), color='red', ls='-', alpha=0.5)
 
     ### legend
-    plt.legend(df.columns[cols_indx])
+    if 'user_legend' in vars():
+        plt.legend(user_legend)
+    else:
+        plt.legend(df.columns[cols_indx])
 
     plt.subplots_adjust(bottom=0.15)
     plt.show()
