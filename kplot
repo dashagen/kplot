@@ -36,11 +36,12 @@ if __name__ == "__main__":
 
     #  Parse inputs
     header_opt = False
+    title = ""
 
     argv = sys.argv[1:]
 
     try:
-        opts, args = getopt.getopt(argv,"hk:b:fv:l:")
+        opts, args = getopt.getopt(argv,"hk:b:fv:l:t:")
     except getopt.GetoptError:
         print(help_line)
         sys.exit(2)
@@ -65,6 +66,8 @@ if __name__ == "__main__":
             vbar_loc = arg
         elif opt in ("-l"):
             user_legend = arg.split(",")
+        elif opt in ("-t"):
+            title = arg
     
     #---------------------
     # stdin processing
@@ -127,5 +130,9 @@ if __name__ == "__main__":
         plt.legend(df.columns[cols_indx])
 
     plt.subplots_adjust(bottom=0.15)
+
+    ### title
+    plt.title(title)
+
     plt.show()
 
