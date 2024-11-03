@@ -6,7 +6,7 @@ import pandas as pd
 import getopt
 import math
 import matplotlib.pyplot as plt
-
+import argparse
 
 ########################
 # UDF's            
@@ -21,6 +21,25 @@ def is_number(s):
         return False
 
 
+# parse arguments
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Plot specified columns from input data")
+
+    parser.add_argument("-k", required=True, metavar='<col1,col2, ..>', 
+    help="Columns to plot (comma-separated, 1-indexed)")
+
+    parser.add_argument("-b", required=True, metavar='col', help="Column to use as x-axis (1-indexed)")
+
+    parser.add_argument("-v", metavar='xaxis_value[,xaxis_value,...]', 
+                       help="Position(s) of vertical line(s) on plot (comma-separated)")
+    parser.add_argument("-l", metavar='<legend1,legend2,..>', help="Legend labels (comma-separated)")
+    parser.add_argument("-t", metavar='title', help="Plot title")
+    parser.add_argument("-f", action="store_true", help="Treat x-axis as categorical")
+    
+    return parser.parse_args()
+
+
 ########################
 # MAIN PROGRAM
 ########################
@@ -30,44 +49,15 @@ if __name__ == "__main__":
     #---------------------
     # argument parsing
     #---------------------
+    args = parse_arguments()
 
-    # Help line
-    help_line = os.path.basename(sys.argv[0]) + " -k<col1, col2,..>  -b<label/x col> -v <vertical line pos> -f"
+    # Parse column indices (convert to 0-indexed)
+    cols_indx   = [int(x) - 1 for x in args.k.split(",")]
+    base_indx   = int(args.b) - 1
+    vbar_locs = args.v.split(',') if args.v else None
+    user_legend = args.l.split(",") if args.l else None
+    title = args.t if args.t else ""
 
-    #  Parse inputs
-    header_opt = False
-    title = ""
-
-    argv = sys.argv[1:]
-
-    try:
-        opts, args = getopt.getopt(argv,"hk:b:fv:l:t:")
-    except getopt.GetoptError:
-        print(help_line)
-        sys.exit(2)
-
-    # check if k, b options are used
-    all_options_set = set(opt for opt, arg in opts)
-
-    if set(["-k", "-b"]).issubset(all_options_set) is False:
-        print(help_line)
-        sys.exit(2)
-
-    # parse all options
-    for opt, arg in opts:
-        if opt == '-h':
-            print(help_line)
-            sys.exit()
-        elif opt in ("-k"):
-            cols_indx = [int(x)-1 for x in arg.split(",")]
-        elif opt in ("-b"):
-            base_indx = int(arg) - 1
-        elif opt in ("-v"):
-            vbar_loc = arg
-        elif opt in ("-l"):
-            user_legend = arg.split(",")
-        elif opt in ("-t"):
-            title = arg
     
     #---------------------
     # stdin processing
@@ -77,6 +67,8 @@ if __name__ == "__main__":
     first_line = sys.stdin.readline()
 
     # Determine if there's a header
+    header_opt = False
+
     if header_opt:
         header = 0
     elif True in [is_number(x) for x in first_line.split()]:
@@ -102,7 +94,7 @@ if __name__ == "__main__":
     #---------------------
     # Plotting
     #---------------------
-    if (isinstance(df.iloc[0, base_indx], str) or '-f' in all_options_set):
+    if (isinstance(df.iloc[0, base_indx], str) or args.f):
         ## Space tick marks out if its a line plot based on the type of X
         ## or if -f is triggered
         xseries = [str(x) for x in df.iloc[:, base_indx]]
@@ -116,23 +108,21 @@ if __name__ == "__main__":
     ### zero line
     plt.axhline(y=0, color='black', ls='-', alpha=0.3)
 
-    ### verticale line
-    if '-v' in all_options_set:
-        if (isinstance(df.iloc[0, base_indx], str) or '-f' in all_options_set):
-            plt.axvline(x=vbar_loc, color='red', ls='-', alpha=0.5)
-        else:
-            plt.axvline(x=float(vbar_loc), color='red', ls='-', alpha=0.5)
+    ### vertical lines
+    if vbar_locs is not None:
+        for vbar_loc in vbar_locs:
+            if (isinstance(df.iloc[0, base_indx], str) or args.f):
+                plt.axvline(x=vbar_loc, color='red', ls='-', alpha=0.5)
+            else:
+                plt.axvline(x=float(vbar_loc), color='red', ls='-', alpha=0.5)
 
     ### legend
-    if 'user_legend' in vars():
+    if user_legend:
         plt.legend(user_legend)
     else:
         plt.legend(df.columns[cols_indx])
 
     plt.subplots_adjust(bottom=0.15)
-
-    ### title
     plt.title(title)
-
     plt.show()
 
