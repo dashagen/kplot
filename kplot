@@ -1,19 +1,26 @@
 #!/usr/bin/python3
+
+# Required library imports
 import sys
 import io
-import os
 import pandas as pd
-import getopt
 import math
 import matplotlib.pyplot as plt
 import argparse
 
 ########################
-# UDF's            
+# User-Defined Functions            
 ########################
 
-# is_number function
 def is_number(s):
+    """
+    Check if a string is a number.
+    
+    Args:
+        s: String to check
+    Returns:
+        bool: True if string is a number, False otherwise
+    """
     try:
         float(s)
         return True
@@ -21,21 +28,35 @@ def is_number(s):
         return False
 
 
-# parse arguments
 def parse_arguments():
-    """Parse command-line arguments."""
+    """
+    Parse command-line arguments for the plotting script.
+    
+    Returns:
+        argparse.Namespace: Parsed command-line arguments with the following options:
+            -k: Columns to plot (required)
+            -b: X-axis column (required)
+            -v: Vertical line positions (optional)
+            -l: Legend labels (optional)
+            -t: Plot title (optional)
+            -f: Flag to treat x-axis as categorical (optional)
+    """
     parser = argparse.ArgumentParser(description="Plot specified columns from input data")
 
+    # Define required arguments
     parser.add_argument("-k", required=True, metavar='<col1,col2, ..>', 
-    help="Columns to plot (comma-separated, 1-indexed)")
+        help="Columns to plot (comma-separated, 1-indexed)")
+    parser.add_argument("-b", required=True, metavar='col', 
+        help="Column to use as x-axis (1-indexed)")
 
-    parser.add_argument("-b", required=True, metavar='col', help="Column to use as x-axis (1-indexed)")
-
+    # Define optional arguments
     parser.add_argument("-v", metavar='xaxis_value[,xaxis_value,...]', 
-                       help="Position(s) of vertical line(s) on plot (comma-separated)")
-    parser.add_argument("-l", metavar='<legend1,legend2,..>', help="Legend labels (comma-separated)")
+        help="Position(s) of vertical line(s) on plot (comma-separated)")
+    parser.add_argument("-l", metavar='<legend1,legend2,..>', 
+        help="Legend labels (comma-separated)")
     parser.add_argument("-t", metavar='title', help="Plot title")
-    parser.add_argument("-f", action="store_true", help="Treat x-axis as categorical")
+    parser.add_argument("-f", action="store_true", 
+        help="Treat x-axis as categorical")
     
     return parser.parse_args()
 
@@ -44,71 +65,62 @@ def parse_arguments():
 # MAIN PROGRAM
 ########################
 if __name__ == "__main__":
-
-
-    #---------------------
-    # argument parsing
-    #---------------------
+    # Parse and process command line arguments
     args = parse_arguments()
 
-    # Parse column indices (convert to 0-indexed)
-    cols_indx   = [int(x) - 1 for x in args.k.split(",")]
-    base_indx   = int(args.b) - 1
-    vbar_locs = args.v.split(',') if args.v else None
-    user_legend = args.l.split(",") if args.l else None
-    title = args.t if args.t else ""
+    # Convert 1-indexed column specifications to 0-indexed for pandas
+    cols_indx = [int(x) - 1 for x in args.k.split(",")]  # Columns to plot
+    base_indx = int(args.b) - 1                          # X-axis column
+    vbar_locs = args.v.split(',') if args.v else None    # Vertical line positions
+    user_legend = args.l.split(",") if args.l else None  # Legend labels
+    title = args.t if args.t else ""                     # Plot title
 
-    
     #---------------------
-    # stdin processing
+    # Data Input Processing
     #---------------------
-
-    # Read the first line from stdin
+    # Read first line to determine if there's a header
     first_line = sys.stdin.readline()
-
-    # Determine if there's a header
     header_opt = False
 
+    # Determine if the first line is header or data
     if header_opt:
         header = 0
     elif True in [is_number(x) for x in first_line.split()]:
-        header = None
+        header = None  # First line contains data
     else:
-        header = 0
+        header = 0    # First line is header
         header_opt = True
 
-    # Read the remaining content and prepend the first line
+    # Combine first line with remaining input
     remaining_content = sys.stdin.read()
     content = first_line + remaining_content
-
-    # Create a file-like buffer with the content
     content_buffer = io.StringIO(content)
 
-    # Read the data into a DataFrame
+    # Read data into pandas DataFrame
     df = pd.read_csv(content_buffer, sep='\s+', header=header)
 
-    # Assign column names if there is no header
+    # Generate column names if no header present
     if header_opt is False:
-        df.columns = [ 'var' + str(i) for i in range(df.shape[1])]
+        df.columns = ['var' + str(i) for i in range(df.shape[1])]
 
     #---------------------
-    # Plotting
+    # Data Visualization
     #---------------------
+    # Handle categorical x-axis (string values or -f flag)
     if (isinstance(df.iloc[0, base_indx], str) or args.f):
-        ## Space tick marks out if its a line plot based on the type of X
-        ## or if -f is triggered
+        # Convert x-values to strings and create line plot
         xseries = [str(x) for x in df.iloc[:, base_indx]]
-        label_span = math.ceil(df.shape[0] / 40)
-        plt.plot(xseries, df.iloc[:, cols_indx ], marker=".") 
-        plt.xticks(xseries[::label_span],  rotation=90)
+        label_span = math.ceil(df.shape[0] / 40)  # Calculate label spacing
+        plt.plot(xseries, df.iloc[:, cols_indx], marker=".")
+        plt.xticks(xseries[::label_span], rotation=90)
     else:
-        ## scatter plot (X is numeric )
-        plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".") 
-    
-    ### zero line
+        # Create numeric scatter plot
+        plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".")
+
+    # Add horizontal zero line for reference
     plt.axhline(y=0, color='black', ls='-', alpha=0.3)
 
-    ### vertical lines
+    # Add vertical lines if specified
     if vbar_locs is not None:
         for vbar_loc in vbar_locs:
             if (isinstance(df.iloc[0, base_indx], str) or args.f):
@@ -116,13 +128,14 @@ if __name__ == "__main__":
             else:
                 plt.axvline(x=float(vbar_loc), color='red', ls='-', alpha=0.5)
 
-    ### legend
+    # Add legend with user-specified or default labels
     if user_legend:
         plt.legend(user_legend)
     else:
         plt.legend(df.columns[cols_indx])
 
-    plt.subplots_adjust(bottom=0.15)
+    # Adjust plot layout and display
+    plt.subplots_adjust(bottom=0.15)  # Ensure x-labels are visible
     plt.title(title)
     plt.show()
 
