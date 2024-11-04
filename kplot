@@ -8,11 +8,12 @@ import math
 import matplotlib.pyplot as plt
 import argparse
 
+
 ########################
 # User-Defined Functions            
 ########################
 
-def is_number(s):
+def is_number(s: str) -> bool:
     """
     Check if a string is a number.
     
@@ -69,73 +70,65 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     # Convert 1-indexed column specifications to 0-indexed for pandas
-    cols_indx = [int(x) - 1 for x in args.k.split(",")]  # Columns to plot
-    base_indx = int(args.b) - 1                          # X-axis column
-    vbar_locs = args.v.split(',') if args.v else None    # Vertical line positions
-    user_legend = args.l.split(",") if args.l else None  # Legend labels
-    title = args.t if args.t else ""                     # Plot title
+    cols_indx = [int(x) - 1 for x in args.k.split(",")]
+    base_indx = int(args.b) - 1
+    vbar_locs = args.v.split(',') if args.v else None
+    user_legend = args.l.split(",") if args.l else None
+    
 
     #---------------------
-    # Data Input Processing
+    # Simplified Data Input Processing
     #---------------------
-    # Read first line to determine if there's a header
-    first_line = sys.stdin.readline()
-    header_opt = False
 
-    # Determine if the first line is header or data
-    if header_opt:
-        header = 0
-    elif True in [is_number(x) for x in first_line.split()]:
-        header = None  # First line contains data
-    else:
-        header = 0    # First line is header
-        header_opt = True
+    # Read first line and determine if it's a header
+    first_line = sys.stdin.readline().strip()
+    has_header = not any(is_number(x) for x in first_line.split())
+    
+    # Read data in one go
+    data = pd.read_csv(
+        io.StringIO(first_line + '\n' + sys.stdin.read()),
+        sep='\s+',
+        header=0 if has_header else None
+    )
+    
+    # Add default column names if needed
+    if not has_header:
+        data.columns = [f'var{i}' for i in range(data.shape[1])]
 
-    # Combine first line with remaining input
-    remaining_content = sys.stdin.read()
-    content = first_line + remaining_content
-    content_buffer = io.StringIO(content)
-
-    # Read data into pandas DataFrame
-    df = pd.read_csv(content_buffer, sep='\s+', header=header)
-
-    # Generate column names if no header present
-    if header_opt is False:
-        df.columns = ['var' + str(i) for i in range(df.shape[1])]
 
     #---------------------
-    # Data Visualization
+    # Simplified Data Visualization
     #---------------------
-    # Handle categorical x-axis (string values or -f flag)
-    if (isinstance(df.iloc[0, base_indx], str) or args.f):
-        # Convert x-values to strings and create line plot
-        xseries = [str(x) for x in df.iloc[:, base_indx]]
-        label_span = math.ceil(df.shape[0] / 40)  # Calculate label spacing
-        plt.plot(xseries, df.iloc[:, cols_indx], marker=".")
-        plt.xticks(xseries[::label_span], rotation=90)
-    else:
-        # Create numeric scatter plot
-        plt.plot(df.iloc[:, base_indx], df.iloc[:, cols_indx], marker=".")
+    fig, ax = plt.subplots()
+    
+    # Determine x-axis values
+    x_values = data.iloc[:, base_indx]
 
-    # Add horizontal zero line for reference
-    plt.axhline(y=0, color='black', ls='-', alpha=0.3)
+    if isinstance(x_values.iloc[0], str) or args.f:
+        x_values = x_values.astype(str)
+        label_span = math.ceil(len(x_values) / 40)
+        plt.xticks(range(len(x_values))[::label_span], x_values[::label_span], rotation=90)
+    
+    # Plot data
+    ax.plot(x_values if not isinstance(x_values.iloc[0], str) else range(len(x_values)),
+    data.iloc[:, cols_indx],
+    marker='.')
 
-    # Add vertical lines if specified
-    if vbar_locs is not None:
-        for vbar_loc in vbar_locs:
-            if (isinstance(df.iloc[0, base_indx], str) or args.f):
-                plt.axvline(x=vbar_loc, color='red', ls='-', alpha=0.5)
-            else:
-                plt.axvline(x=float(vbar_loc), color='red', ls='-', alpha=0.5)
+    # Add zero line 
+    ax.axhline(y=0, color='black', ls='-', alpha=0.3)
+    
 
-    # Add legend with user-specified or default labels
-    if user_legend:
-        plt.legend(user_legend)
-    else:
-        plt.legend(df.columns[cols_indx])
+    # Add vertical reference lines
+    if vbar_locs:
+        for loc in vbar_locs:
+            ax.axvline(x=x_values.index(loc) if isinstance(x_values.iloc[0], str) else float(loc),
+                      color='red', ls='-', alpha=0.5)
 
-    # Adjust plot layout and display
-    plt.subplots_adjust(bottom=0.15)  # Ensure x-labels are visible
-    plt.title(title)
+    # Add legend and title
+    ax.legend(user_legend if user_legend else data.columns[cols_indx])
+    ax.set_title(args.t or "")
+
+    # Display plot
+    plt.subplots_adjust(bottom=0.15)
     plt.show()
 
