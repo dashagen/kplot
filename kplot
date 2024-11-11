@@ -77,14 +77,14 @@ if __name__ == "__main__":
     
 
     #---------------------
-    # Simplified Data Input Processing
+    # Data Input Processing
     #---------------------
 
     # Read first line and determine if it's a header
     first_line = sys.stdin.readline().strip()
     has_header = not any(is_number(x) for x in first_line.split())
     
-    # Read data in one go
+    # Read all data
     data = pd.read_csv(
         io.StringIO(first_line + '\n' + sys.stdin.read()),
         sep='\s+',
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
 
     #---------------------
-    # Simplified Data Visualization
+    # Data Visualization
     #---------------------
     fig, ax = plt.subplots()
     
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # Add vertical reference lines
     if vbar_locs:
         for loc in vbar_locs:
-            ax.axvline(x=x_values.index(loc) if isinstance(x_values.iloc[0], str) else float(loc),
+            ax.axvline(x=x_values.tolist().index(loc) if isinstance(x_values.iloc[0], str) else float(loc),
                       color='red', ls='-', alpha=0.5)
 
     # Add legend and title
