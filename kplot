@@ -8,6 +8,9 @@ import math
 import matplotlib.pyplot as plt
 import argparse
 
+# Constants
+NUM_TICKS = 40
+
 
 ########################
 # User-Defined Functions            
@@ -106,22 +109,19 @@ if __name__ == "__main__":
 
     if isinstance(x_values.iloc[0], str) or args.f:
         x_values = x_values.astype(str)
-        label_span = math.ceil(len(x_values) / 40)
-        plt.xticks(range(len(x_values))[::label_span], x_values[::label_span], rotation=90)
-    
-    # Plot data
-    ax.plot(x_values if not isinstance(x_values.iloc[0], str) else range(len(x_values)),
-    data.iloc[:, y_cols_indx],
-    marker='.')
+        ax.plot(x_values, data.iloc[:, y_cols_indx], marker='.')
+        label_span = math.ceil(len(x_values) / NUM_TICKS)
+        plt.xticks(x_values[::label_span], rotation=90)
+    else:
+        ax.plot(x_values, data.iloc[:, y_cols_indx], marker='.')
 
     # Add zero line 
     ax.axhline(y=0, color='black', ls='-', alpha=0.3)
     
-
     # Add vertical reference lines
     if vbar_locs:
         for loc in vbar_locs:
-            ax.axvline(x=x_values.tolist().index(loc) if isinstance(x_values.iloc[0], str) else float(loc),
+            ax.axvline(x=loc if (isinstance(x_values.iloc[0], str) or args.f) else float(loc),
                       color='red', ls='-', alpha=0.5)
 
     # Add legend and title
