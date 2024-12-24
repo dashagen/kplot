@@ -35,8 +35,8 @@ def parse_arguments():
     
     Returns:
         argparse.Namespace: Parsed command-line arguments with the following options:
-            -k: Columns to plot (required)
-            -b: X-axis column (required)
+            -y: Y Columns to plot (required)
+            -x: X column (required)
             -v: Vertical line positions (optional)
             -l: Legend labels (optional)
             -t: Plot title (optional)
@@ -45,9 +45,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Plot specified columns from input data")
 
     # Define required arguments
-    parser.add_argument("-k", required=True, metavar='<col1,col2, ..>', 
+    parser.add_argument("-y", required=True, metavar='<col1,col2, ..>', 
         help="Columns to plot (comma-separated, 1-indexed)")
-    parser.add_argument("-b", required=True, metavar='col', 
+    parser.add_argument("-x", required=True, metavar='col', 
         help="Column to use as x-axis (1-indexed)")
 
     # Define optional arguments
@@ -70,8 +70,8 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     # Convert 1-indexed column specifications to 0-indexed for pandas
-    cols_indx = [int(x) - 1 for x in args.k.split(",")]
-    base_indx = int(args.b) - 1
+    y_cols_indx = [int(x) - 1 for x in args.y.split(",")]
+    x_indx = int(args.x) - 1
     vbar_locs = args.v.split(',') if args.v else None
     user_legend = args.l.split(",") if args.l else None
     
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots()
     
     # Determine x-axis values
-    x_values = data.iloc[:, base_indx]
+    x_values = data.iloc[:, x_indx]
 
     if isinstance(x_values.iloc[0], str) or args.f:
         x_values = x_values.astype(str)
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     
     # Plot data
     ax.plot(x_values if not isinstance(x_values.iloc[0], str) else range(len(x_values)),
-    data.iloc[:, cols_indx],
+    data.iloc[:, y_cols_indx],
     marker='.')
 
     # Add zero line 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                       color='red', ls='-', alpha=0.5)
 
     # Add legend and title
-    ax.legend(user_legend if user_legend else data.columns[cols_indx])
+    ax.legend(user_legend if user_legend else data.columns[y_cols_indx])
     ax.set_title(args.t or "")
 
     # Display plot
