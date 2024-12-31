@@ -44,6 +44,7 @@ def parse_arguments():
             -l: Legend labels (optional)
             -t: Plot title (optional)
             -f: Flag to treat x-axis as categorical (optional)
+            --line: Flag to do line plot w/o markers (optional)
     """
     parser = argparse.ArgumentParser(description="Plot specified columns from input data")
 
@@ -61,6 +62,7 @@ def parse_arguments():
     parser.add_argument("-t", metavar='title', help="Plot title")
     parser.add_argument("-f", action="store_true", 
         help="Treat x-axis as categorical")
+    parser.add_argument("--line", action="store_true", help="Line plot, no markers")
     
     return parser.parse_args()
 
@@ -102,6 +104,8 @@ if __name__ == "__main__":
     #---------------------
     # Data Visualization
     #---------------------
+    MARKER = "" if args.line else "."
+
     fig, ax = plt.subplots()
     
     # Determine x-axis values
@@ -109,11 +113,11 @@ if __name__ == "__main__":
 
     if isinstance(x_values.iloc[0], str) or args.f:
         x_values = x_values.astype(str)
-        ax.plot(x_values, data.iloc[:, y_cols_indx], marker='.')
+        ax.plot(x_values, data.iloc[:, y_cols_indx], marker=MARKER)
         label_span = math.ceil(len(x_values) / NUM_TICKS)
         plt.xticks(x_values[::label_span], rotation=90)
     else:
-        ax.plot(x_values, data.iloc[:, y_cols_indx], marker='.')
+        ax.plot(x_values, data.iloc[:, y_cols_indx], marker=MARKER)
 
     # Add zero line 
     ax.axhline(y=0, color='black', ls='-', alpha=0.3)
