@@ -92,7 +92,7 @@ if __name__ == "__main__":
     # Read all data
     data = pd.read_csv(
         io.StringIO(first_line + '\n' + sys.stdin.read()),
-        sep='\s+',
+        sep=r'\s+',
         header=0 if has_header else None
     )
     
